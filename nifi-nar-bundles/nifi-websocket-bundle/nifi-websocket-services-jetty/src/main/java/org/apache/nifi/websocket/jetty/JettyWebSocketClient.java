@@ -125,7 +125,15 @@ public class JettyWebSocketClient extends AbstractJettyWebSocketService implemen
             .addValidator(StandardValidators.NON_EMPTY_EL_VALIDATOR)
             .sensitive(true)
             .build();
-
+    public static final PropertyDescriptor AUTHORIZATION_HEADER = new PropertyDescriptor.Builder()
+            .name("authorization-header")
+            .displayName("Authorization Header")
+            .description("Authorization Header for Authentication.")
+            .required(false)
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
+            .addValidator(StandardValidators.NON_EMPTY_EL_VALIDATOR)
+            .sensitive(true)
+            .build();
     public static final PropertyDescriptor AUTH_CHARSET = new PropertyDescriptor.Builder()
             .name("authentication-charset")
             .displayName("Authentication Header Charset")
@@ -147,6 +155,7 @@ public class JettyWebSocketClient extends AbstractJettyWebSocketService implemen
         props.add(SESSION_MAINTENANCE_INTERVAL);
         props.add(USER_NAME);
         props.add(USER_PASSWORD);
+        props.add(AUTHORIZATION_HEADER);
         props.add(AUTH_CHARSET);
 
         properties = Collections.unmodifiableList(props);
@@ -178,6 +187,7 @@ public class JettyWebSocketClient extends AbstractJettyWebSocketService implemen
         configurePolicy(context, client.getPolicy());
         final String userName = context.getProperty(USER_NAME).evaluateAttributeExpressions().getValue();
         final String userPassword = context.getProperty(USER_PASSWORD).evaluateAttributeExpressions().getValue();
+        final String authorizationHeaderValue = context.getProperty(AUTHORIZATION_HEADER).evaluateAttributeExpressions().getValue();
         if (!StringUtils.isEmpty(userName) && !StringUtils.isEmpty(userPassword)) {
             final String charsetName = context.getProperty(AUTH_CHARSET).evaluateAttributeExpressions().getValue();
             if (StringUtils.isEmpty(charsetName)) {
@@ -186,7 +196,9 @@ public class JettyWebSocketClient extends AbstractJettyWebSocketService implemen
             final Charset charset = Charset.forName(charsetName);
             final String base64String = Base64.encodeBase64String((userName + ":" + userPassword).getBytes(charset));
             authorizationHeader = "Basic " + base64String;
-        } else {
+        } else if (!StringUtils.isEmpty(authorizationHeaderValue) ){
+            authorizationHeader = authorizationHeaderValue;
+        }else {
             authorizationHeader = null;
         }
 
